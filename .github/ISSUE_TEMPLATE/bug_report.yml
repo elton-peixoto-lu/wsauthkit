@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a defect or regression in WSAuthKit
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem clearly.
+      placeholder: What is happening and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Share the smallest reproduction you can.
+      placeholder: Request headers, config, token shape, code snippet, and steps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Explain why this matters in production or development.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: v0.1.2
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Go version, OS, framework, gateway, or deployment context.
