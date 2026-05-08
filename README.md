@@ -314,6 +314,15 @@ Open-source branding files live under [`assets/`](./assets/README.md).
 
 Release history lives in [`CHANGELOG.md`](./CHANGELOG.md).
 
+## Versioning
+
+`WSAuthKit` follows semantic versioning with a practical early-stage policy:
+
+- `v0.x` while the API is still maturing
+- patch releases for fixes and non-breaking maintenance
+- minor releases for additive, backwards-compatible features
+- a future major release when the public API is considered stable and long-lived
+
 ## Launch Copy
 
 Short launch post drafts live under [`docs/`](./docs/).

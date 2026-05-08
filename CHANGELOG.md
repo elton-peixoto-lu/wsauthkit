@@ -4,6 +4,13 @@ All notable changes to `WSAuthKit` will be documented in this file.
 
 The format is inspired by Keep a Changelog and uses semantic versioning.
 
+Current release policy:
+
+- `v0.x` means the library is usable but still evolving
+- patch releases are used for fixes and non-breaking adjustments
+- minor releases are used for additive improvements
+- a future `v1.0.0` will mark a more stable public API contract
+
 ## [v0.1.2] - 2026-05-08
 
 ### Fixed
