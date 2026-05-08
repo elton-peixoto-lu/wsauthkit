@@ -9,10 +9,10 @@
 
 <p align="center">
   <a href="https://github.com/elton-peixoto-lu/WSAuthKit/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/elton-peixoto-lu/WSAuthKit/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
-  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/releases"><img alt="Release" src="https://img.shields.io/github/v/release/elton-peixoto-lu/WSAuthKit?display_name=tag&style=for-the-badge&label=Release"></a>
+  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/releases"><img alt="Version" src="https://img.shields.io/github/v/release/elton-peixoto-lu/WSAuthKit?display_name=tag&sort=semver&style=for-the-badge&label=Version"></a>
   <a href="https://pkg.go.dev/github.com/wsauthkit/wsauthkit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-0A1F44?style=for-the-badge&logo=go"></a>
   <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/WSAuthKit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/WSAuthKit?style=for-the-badge"></a>
-  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/github/license/elton-peixoto-lu/WSAuthKit?style=for-the-badge&label=%E2%9A%96%20License"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/%E2%9A%96%20License-MIT-0A1F44?style=for-the-badge"></a>
 </p>
 
 <p align="center">
