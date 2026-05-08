@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/elton-peixoto-lu/WSAuthKit"
+	"github.com/elton-peixoto-lu/wsauthkit"
 )
 
 func main() {

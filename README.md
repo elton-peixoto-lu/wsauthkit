@@ -8,10 +8,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/elton-peixoto-lu/WSAuthKit/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
-  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/releases"><img alt="Version" src="https://img.shields.io/github/v/release/elton-peixoto-lu/WSAuthKit?display_name=tag&sort=semver&style=for-the-badge&label=Version"></a>
-  <a href="https://pkg.go.dev/github.com/elton-peixoto-lu/WSAuthKit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-0A1F44?style=for-the-badge&logo=go"></a>
-  <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/WSAuthKit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/WSAuthKit?style=for-the-badge"></a>
+  <a href="https://github.com/elton-peixoto-lu/wsauthkit/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/elton-peixoto-lu/wsauthkit/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
+  <a href="https://github.com/elton-peixoto-lu/wsauthkit/releases"><img alt="Version" src="https://img.shields.io/github/v/release/elton-peixoto-lu/wsauthkit?display_name=tag&sort=semver&style=for-the-badge&label=Version"></a>
+  <a href="https://pkg.go.dev/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-0A1F44?style=for-the-badge&logo=go"></a>
+  <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/wsauthkit?style=for-the-badge"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/%E2%9A%96%20License-MIT-0A1F44?style=for-the-badge"></a>
 </p>
 
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  ⚖ Released under the MIT License
+  &#x2696; Released under the MIT License
 </p>
 
 `WSAuthKit` is a focused Go library that standardizes secure WebSocket authentication without turning your service into an auth framework.
@@ -52,7 +52,7 @@ WebSocket authentication is often implemented differently in every service:
 ## Installation
 
 ```bash
-go get github.com/elton-peixoto-lu/WSAuthKit
+go get github.com/elton-peixoto-lu/wsauthkit
 ```
 
 ## Quick Start
@@ -65,7 +65,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/elton-peixoto-lu/WSAuthKit"
+	"github.com/elton-peixoto-lu/wsauthkit"
 )
 
 func main() {

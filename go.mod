@@ -1,4 +1,4 @@
-module github.com/elton-peixoto-lu/WSAuthKit
+module github.com/elton-peixoto-lu/wsauthkit
 
 go 1.25.0
 
