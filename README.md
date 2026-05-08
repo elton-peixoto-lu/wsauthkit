@@ -41,6 +41,22 @@ WebSocket authentication is often implemented differently in every service:
 
 `WSAuthKit` solves that with one production-oriented middleware layer built specifically for Go backends.
 
+## What WSAuthKit Solves
+
+- eliminates duplicated JWT extraction and validation logic across WebSocket handlers
+- enforces consistent `issuer`, `audience`, signature, and expiry validation
+- supports handshake patterns commonly used behind gateways and proxies
+- keeps handlers focused on business logic by injecting validated claims into context
+- provides one reusable auth path for both `net/http` servers and AWS API Gateway WebSocket connect events
+
+## Operational Benefits
+
+- prevents authentication drift across teams and services by standardizing one handshake auth pipeline
+- reduces regression risk with repeatable test layers for extraction, validation, and context injection
+- centralizes JWT policy updates in one place instead of spreading changes across multiple handlers
+- speeds up onboarding by giving new contributors a clear and reusable auth integration path
+- keeps code reviews focused on product behavior instead of repeated JWT plumbing
+
 ## Features
 
 - JWT validation with `SigningKey`, custom `KeyFunc`, or remote `JWKSURL`
@@ -200,6 +216,7 @@ This adapter is intentionally narrow:
 - it extracts tokens from headers, query string, and `Sec-WebSocket-Protocol`
 - it reuses the same JWT validation model as the core library
 - it does not manage connection storage or API Gateway callback delivery
+- it can be smoke-tested locally with the optional LocalStack flow under `examples/apigateway-lambda-keycloak`
 
 ## Secure Defaults
 
@@ -224,6 +241,16 @@ Or via `Makefile`:
 make test
 ```
 
+Integration tests:
+
+```bash
+go test ./... -tags integration
+```
+
+```bash
+make test-integration
+```
+
 Functional tests:
 
 ```bash
@@ -244,10 +271,21 @@ go test ./... -tags e2e
 make test-e2e
 ```
 
+LocalStack smoke test:
+
+```bash
+go test ./examples/apigateway-lambda-keycloak -tags localstack -v
+```
+
+```bash
+make test-localstack
+```
+
 Run all suites:
 
 ```bash
 go test ./...
+go test ./... -tags integration
 go test ./... -tags functional
 go test ./... -tags e2e
 ```
@@ -261,6 +299,10 @@ Release validation:
 ```bash
 make release-check
 ```
+
+Environment-specific smoke test notes live in [`docs/test-results/localstack-smoke.md`](./docs/test-results/localstack-smoke.md).
+
+Consolidated AWS + Keycloak validation results live in [`docs/test-results/aws-keycloak-test-matrix.md`](./docs/test-results/aws-keycloak-test-matrix.md).
 
 ## Use Cases
 

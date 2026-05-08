@@ -1,0 +1,14 @@
+services:
+  localstack:
+    image: localstack/localstack-pro:latest
+    container_name: wsauthkit-localstack
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - DEBUG=0
+      - SERVICES=lambda,apigateway,apigatewayv2,logs,iam,sts
+      - AWS_DEFAULT_REGION=us-east-1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

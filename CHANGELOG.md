@@ -11,6 +11,14 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.1.3] - 2026-05-08
+
+### Added
+
+- consolidated AWS + Keycloak validation matrix in `docs/test-results/aws-keycloak-test-matrix.md`
+- explicit README section describing the concrete problems WSAuthKit solves
+- LocalStack smoke-test artifacts and execution notes under `docs/test-results/`
+
 ## [v0.1.2] - 2026-05-08
 
 ### Fixed

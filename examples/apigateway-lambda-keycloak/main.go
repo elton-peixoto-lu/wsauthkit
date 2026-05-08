@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -11,9 +12,15 @@ import (
 )
 
 const (
-	keycloakIssuer   = "https://keycloak.example.com/realms/platform"
-	keycloakAudience = "ws-backend"
-	keycloakJWKSURL  = "https://keycloak.example.com/realms/platform/protocol/openid-connect/certs"
+	defaultKeycloakIssuer   = "https://keycloak.example.com/realms/platform"
+	defaultKeycloakAudience = "ws-backend"
+	defaultKeycloakJWKSURL  = "https://keycloak.example.com/realms/platform/protocol/openid-connect/certs"
+)
+
+var (
+	keycloakIssuer   = getenvOrDefault("KEYCLOAK_ISSUER", defaultKeycloakIssuer)
+	keycloakAudience = getenvOrDefault("KEYCLOAK_AUDIENCE", defaultKeycloakAudience)
+	keycloakJWKSURL  = getenvOrDefault("KEYCLOAK_JWKS_URL", defaultKeycloakJWKSURL)
 )
 
 func main() {
@@ -53,4 +60,12 @@ func (handler *connectHandler) handleConnect(_ context.Context, event events.API
 		StatusCode: 200,
 		Body:       "connected",
 	}, nil
+}
+
+func getenvOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+
+	return fallback
 }
