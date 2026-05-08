@@ -172,12 +172,34 @@ claims, err = auth.Authenticate(r)
 - intended to run before the WebSocket upgrade
 - works naturally with `gorilla/websocket`
 - fits API Gateway and proxy-driven handshake patterns
+- includes a native `apigateway` adapter for AWS WebSocket connect events
 
 ## Examples
 
 - basic authenticated echo server: [`examples/main.go`](./examples/main.go)
 - API Gateway style subprotocol extraction with Gorilla WebSocket: [`examples/apigateway/main.go`](./examples/apigateway/main.go)
 - API Gateway WebSocket Lambda with Keycloak JWKS validation: [`examples/apigateway-lambda-keycloak/main.go`](./examples/apigateway-lambda-keycloak/main.go)
+
+## AWS API Gateway
+
+`WSAuthKit` now includes a focused adapter for API Gateway WebSocket connect events:
+
+```go
+auth, err := apigateway.NewAuth(apigateway.Config{
+	Issuer:   "https://keycloak.example.com/realms/platform",
+	Audience: "ws-backend",
+	JWKSURL:  "https://keycloak.example.com/realms/platform/protocol/openid-connect/certs",
+})
+
+claims, err := auth.Authenticate(event)
+```
+
+This adapter is intentionally narrow:
+
+- it authenticates API Gateway WebSocket connect events
+- it extracts tokens from headers, query string, and `Sec-WebSocket-Protocol`
+- it reuses the same JWT validation model as the core library
+- it does not manage connection storage or API Gateway callback delivery
 
 ## Secure Defaults
 
