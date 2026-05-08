@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://github.com/elton-peixoto-lu/wsauthkit/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/elton-peixoto-lu/wsauthkit/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
   <a href="https://github.com/elton-peixoto-lu/wsauthkit/releases"><img alt="Version" src="https://img.shields.io/github/v/release/elton-peixoto-lu/wsauthkit?display_name=tag&sort=semver&style=for-the-badge&label=Version"></a>
-  <a href="https://pkg.go.dev/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-0A1F44?style=for-the-badge&logo=go"></a>
+  <a href="https://proxy.golang.org/github.com/elton-peixoto-lu/wsauthkit/@v/list"><img alt="Go Module" src="https://img.shields.io/badge/go-module-0A1F44?style=for-the-badge&logo=go"></a>
   <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/wsauthkit?style=for-the-badge"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/%E2%9A%96%20License-MIT-0A1F44?style=for-the-badge"></a>
 </p>
@@ -26,6 +26,8 @@
 `WSAuthKit` is a focused Go library that standardizes secure WebSocket authentication without turning your service into an auth framework.
 
 It keeps JWT parsing, issuer validation, audience validation, token extraction, and claim injection out of handlers so real-time services stay small, readable, and consistent.
+
+`WSAuthKit` only handles authentication concerns during the WebSocket handshake. It does not manage connections, rooms, presence, sessions, or message routing.
 
 ## Why WSAuthKit
 
@@ -61,12 +63,17 @@ go get github.com/elton-peixoto-lu/wsauthkit
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/elton-peixoto-lu/wsauthkit"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 func main() {
 	auth, err := wsauthkit.NewAuth(wsauthkit.Config{
@@ -86,7 +93,25 @@ func main() {
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	claims := wsauthkit.MustClaims(r.Context())
-	fmt.Println("user:", claims.Subject)
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("upgrade error: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		messageType, payload, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+
+		reply := append([]byte("user="+claims.Subject+" "), payload...)
+		if err := conn.WriteMessage(messageType, reply); err != nil {
+			return
+		}
+	}
 }
 ```
 
@@ -141,6 +166,13 @@ claims, err := auth.ValidateToken(token)
 claims, err = auth.Authenticate(r)
 ```
 
+## Compatibility
+
+- built on top of standard `net/http`
+- intended to run before the WebSocket upgrade
+- works naturally with `gorilla/websocket`
+- fits API Gateway and proxy-driven handshake patterns
+
 ## Secure Defaults
 
 - token expiration is required
@@ -158,10 +190,20 @@ Unit tests:
 go test ./...
 ```
 
+Or via `Makefile`:
+
+```bash
+make test
+```
+
 Functional tests:
 
 ```bash
 go test ./... -tags functional
+```
+
+```bash
+make test-functional
 ```
 
 End-to-end WebSocket tests:
@@ -170,12 +212,26 @@ End-to-end WebSocket tests:
 go test ./... -tags e2e
 ```
 
+```bash
+make test-e2e
+```
+
 Run all suites:
 
 ```bash
 go test ./...
 go test ./... -tags functional
 go test ./... -tags e2e
+```
+
+```bash
+make test-all
+```
+
+Release validation:
+
+```bash
+make release-check
 ```
 
 ## Use Cases
@@ -225,6 +281,10 @@ Issues and pull requests are welcome. Keep contributions aligned with the projec
 ## Branding Assets
 
 Open-source branding files live under [`assets/`](./assets/README.md).
+
+## Changelog
+
+Release history lives in [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## License
 

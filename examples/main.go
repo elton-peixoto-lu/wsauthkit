@@ -1,12 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/elton-peixoto-lu/wsauthkit"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 func main() {
 	auth, err := wsauthkit.NewAuth(wsauthkit.Config{
@@ -27,5 +34,25 @@ func main() {
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	claims := wsauthkit.MustClaims(r.Context())
-	fmt.Fprintf(w, "user=%s", claims.Subject)
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("upgrade error: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		messageType, payload, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("read error: %v", err)
+			return
+		}
+
+		response := append([]byte("user="+claims.Subject+" "), payload...)
+		if err := conn.WriteMessage(messageType, response); err != nil {
+			log.Printf("write error: %v", err)
+			return
+		}
+	}
 }
