@@ -9,4 +9,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 )
 
-require golang.org/x/time v0.9.0 // indirect
+require (
+	github.com/aws/aws-lambda-go v1.54.0 // indirect
+	golang.org/x/time v0.9.0 // indirect
+)

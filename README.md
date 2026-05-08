@@ -177,6 +177,7 @@ claims, err = auth.Authenticate(r)
 
 - basic authenticated echo server: [`examples/main.go`](./examples/main.go)
 - API Gateway style subprotocol extraction with Gorilla WebSocket: [`examples/apigateway/main.go`](./examples/apigateway/main.go)
+- API Gateway WebSocket Lambda with Keycloak JWKS validation: [`examples/apigateway-lambda-keycloak/main.go`](./examples/apigateway-lambda-keycloak/main.go)
 
 ## Secure Defaults
 

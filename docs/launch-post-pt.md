@@ -1,28 +1,29 @@
-# WSAuthKit launch post
+# Post de lancamento
 
-Acabei de publicar o `WSAuthKit`, uma biblioteca open source em Go para autenticação segura de WebSocket com JWT.
+Publiquei o `WSAuthKit`, uma biblioteca open source em Go para padronizar autenticacao de WebSocket com JWT.
 
-Problema que ela resolve:
+A ideia veio de um problema recorrente em backend:
 
-- autenticação de WebSocket costuma ficar duplicada entre serviços
-- extração de token no handshake é implementada de forma inconsistente
-- `Authorization` e `Sec-WebSocket-Protocol` nem sempre são tratados direito
-- issuer e audience acabam sendo esquecidos
+- autenticacao de WebSocket quase sempre fica duplicada
+- cada servico extrai token de um jeito
+- `Authorization` e `Sec-WebSocket-Protocol` costumam virar detalhe esquecido
+- issuer e audience nem sempre sao validados com consistencia
 
-O `WSAuthKit` mantém isso fora do handler e entrega um middleware pequeno, idiomático e focado:
+O `WSAuthKit` resolve isso com uma camada pequena e focada:
 
-- extração de token
-- validação JWT
-- validação de issuer e audience
-- injeção de claims no contexto
-- integração limpa com `net/http` e `gorilla/websocket`
+- extracao de token no handshake
+- validacao JWT
+- validacao de issuer e audience
+- claims no contexto
+- integracao limpa com `net/http` e `gorilla/websocket`
 
-Repo:
+Repositorio:
 `https://github.com/elton-peixoto-lu/wsauthkit`
 
-Instalação:
+Instalacao:
+
 ```bash
 go get github.com/elton-peixoto-lu/wsauthkit
 ```
 
-Feedback é muito bem-vindo.
+Feedback e contribuicoes sao muito bem-vindos.
