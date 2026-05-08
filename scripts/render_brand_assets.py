@@ -11,6 +11,8 @@ ASSETS = ROOT / "assets"
 LOGO = ASSETS / "logo"
 FAVICON = ASSETS / "favicon"
 SOCIAL = ASSETS / "social"
+SOURCE = ASSETS / "source"
+REFERENCE_BOARD = SOURCE / "logo-reference.png"
 
 FONT_STACK = "'Segoe UI', 'Arial', sans-serif"
 FONT_BOLD = [
@@ -24,8 +26,12 @@ FONT_REGULAR = [
 
 
 def main() -> None:
-    for directory in (LOGO, FAVICON, SOCIAL):
+    for directory in (LOGO, FAVICON, SOCIAL, SOURCE):
         directory.mkdir(parents=True, exist_ok=True)
+
+    if REFERENCE_BOARD.exists():
+        render_from_reference_board()
+        return
 
     (LOGO / "logo.svg").write_text(build_logo_svg(theme="light", background=False, width=1200, height=420), encoding="utf-8")
 
@@ -40,6 +46,47 @@ def main() -> None:
 
     favicon_img = Image.open(FAVICON / "favicon-32.png")
     favicon_img.save(FAVICON / "favicon.ico", sizes=[(16, 16), (32, 32)])
+
+
+def render_from_reference_board() -> None:
+    board = Image.open(REFERENCE_BOARD).convert("RGBA")
+
+    export_crop(board, (70, 25, 1185, 760), LOGO / "logo-light.png", (1400, 920))
+    export_crop(board, (0, 760, 720, 1016), LOGO / "logo-dark.png", (1400, 500))
+    export_crop(board, (775, 760, 1008, 1010), LOGO / "symbol-light.png", (640, 640))
+    export_crop(board, (1018, 760, 1252, 1010), LOGO / "symbol-dark.png", (640, 640))
+    export_crop(board, (566, 1000, 814, 1146), LOGO / "monogram.png", (640, 640))
+    export_crop(board, (0, 70, 1254, 697), SOCIAL / "github-social-preview.png", (1280, 640))
+    export_crop(board, (974, 980, 1237, 1237), FAVICON / "favicon-32.png", (32, 32))
+    export_crop(board, (974, 980, 1237, 1237), FAVICON / "favicon-16.png", (16, 16))
+
+    favicon_img = Image.open(FAVICON / "favicon-32.png")
+    favicon_img.save(FAVICON / "favicon.ico", sizes=[(16, 16), (32, 32)])
+
+    # Keep a lightweight SVG placeholder that points maintainers to the raster source.
+    (LOGO / "logo.svg").write_text(build_reference_svg_notice(), encoding="utf-8")
+
+
+def export_crop(image: Image.Image, crop_box: tuple[int, int, int, int], output_path: Path, size: tuple[int, int]) -> None:
+    cropped = image.crop(crop_box)
+    resized = cropped.resize(size, Image.Resampling.LANCZOS)
+    resized.save(output_path)
+
+
+def build_reference_svg_notice() -> str:
+    return dedent(
+        """
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420">
+          <rect width="1200" height="420" fill="#ffffff"/>
+          <text x="600" y="180" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="48" font-weight="700" fill="#0A1F44">
+            WSAuthKit
+          </text>
+          <text x="600" y="235" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#1F3B67">
+            Raster logo is sourced from assets/source/logo-reference.png
+          </text>
+        </svg>
+        """
+    ).strip()
 
 
 def palette(theme: str) -> dict[str, tuple[int, int, int, int]]:
@@ -95,23 +142,37 @@ def draw_logo_png(path: Path, theme: str, width: int, height: int, background: b
     if background:
         draw.rounded_rectangle((2, 2, width - 2, height - 2), radius=28, fill=colors["bg"], outline=colors["border"], width=2)
 
-    draw_symbol(draw, center=(250, 215), scale=0.92, theme=theme)
+    center_x = width / 2
+    draw_symbol(draw, center=(center_x, 130), scale=1.22, theme=theme)
 
-    title_font = font(146, bold=True)
-    subtitle_font = font(34, bold=True)
-    ws_width = draw.textbbox((0, 0), "WS", font=title_font)[2]
-    auth_width = draw.textbbox((0, 0), "Auth", font=title_font)[2]
+    title_font = font(128, bold=True)
+    subtitle_font = font(18, bold=True)
+    title_y = 292
 
-    x = 420
-    y = 118
-    draw.text((x, y), "WS", font=title_font, fill=colors["text"])
-    draw.text((x + ws_width - 4, y), "Auth", font=title_font, fill=colors["accent"])
-    draw.text((x + ws_width + auth_width - 8, y), "Kit", font=title_font, fill=colors["text"])
+    text_runs = [
+        ("WS", colors["text"]),
+        ("Auth", colors["accent"]),
+        ("Kit", colors["text"]),
+    ]
+    run_widths = [draw.textbbox((0, 0), text, font=title_font)[2] for text, _ in text_runs]
+    total_width = sum(run_widths)
+    cursor_x = center_x - total_width / 2
+    for (text, fill), run_width in zip(text_runs, run_widths):
+        draw.text((cursor_x, title_y), text, font=title_font, fill=fill)
+        cursor_x += run_width
 
-    line_y = 344
-    draw.line((430, line_y, 540, line_y), fill=colors["wave"], width=6)
-    draw.line((1088, line_y, 1198, line_y), fill=colors["wave"], width=6)
-    draw.text((565, 320), "SECURE WEBSOCKET AUTHENTICATION FOR GO", font=subtitle_font, fill=colors["subtext"], anchor="la")
+    subtitle = "SECURE WEBSOCKET AUTHENTICATION FOR GO"
+    subtitle_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+    subtitle_width = subtitle_bbox[2] - subtitle_bbox[0]
+    subtitle_x = center_x - subtitle_width / 2
+    subtitle_y = 416
+    line_gap = 14
+    line_width = 46
+    line_y = subtitle_y + 10
+
+    draw.text((subtitle_x, subtitle_y), subtitle, font=subtitle_font, fill=colors["subtext"])
+    draw.line((subtitle_x - line_gap - line_width, line_y, subtitle_x - line_gap, line_y), fill=colors["wave"], width=4)
+    draw.line((subtitle_x + subtitle_width + line_gap, line_y, subtitle_x + subtitle_width + line_gap + line_width, line_y), fill=colors["wave"], width=4)
 
     image.save(path)
 
@@ -149,20 +210,20 @@ def draw_social_png(path: Path, width: int, height: int) -> None:
     draw.ellipse((920, -60, 1290, 300), fill=(20, 54, 99, 90))
     draw.ellipse((860, 360, 1320, 760), fill=(14, 41, 77, 100))
 
-    draw_symbol(draw, center=(255, 265), scale=1.22, theme="dark")
+    draw_symbol(draw, center=(255, 255), scale=1.28, theme="dark")
 
-    title_font = font(146, bold=True)
+    title_font = font(138, bold=True)
     sub_font = font(34, bold=True)
     body_font = font(24, bold=False)
 
     ws_width = draw.textbbox((0, 0), "WS", font=title_font)[2]
     auth_width = draw.textbbox((0, 0), "Auth", font=title_font)[2]
     x = 425
-    y = 155
+    y = 148
     draw.text((x, y), "WS", font=title_font, fill=colors["text"])
     draw.text((x + ws_width - 3, y), "Auth", font=title_font, fill=colors["accent"])
     draw.text((x + ws_width + auth_width - 6, y), "Kit", font=title_font, fill=colors["text"])
-    draw.text((430, 320), "SECURE WEBSOCKET AUTHENTICATION FOR GO", font=sub_font, fill=colors["subtext"])
+    draw.text((430, 312), "SECURE WEBSOCKET AUTHENTICATION FOR GO", font=sub_font, fill=colors["subtext"])
     draw.text((430, 404), "JWT authentication middleware for cloud-native websocket services.", font=body_font, fill=(175, 203, 231, 255))
     draw.text((430, 446), "Header and subprotocol extraction. Issuer and audience validation.", font=body_font, fill=(175, 203, 231, 255))
     draw.text((430, 488), "Clean handlers with secure defaults.", font=body_font, fill=(175, 203, 231, 255))
@@ -200,6 +261,9 @@ def draw_symbol(draw: ImageDraw.ImageDraw, center: tuple[float, float], scale: f
     dot_r = t((236, 94))
     draw.ellipse((dot_l[0] - r, dot_l[1] - r, dot_l[0] + r, dot_l[1] + r), fill=colors["wave"])
     draw.ellipse((dot_r[0] - r, dot_r[1] - r, dot_r[0] + r, dot_r[1] + r), fill=colors["wave"])
+    dash_width = max(2, int(4 * scale))
+    draw.line((t((33, 94)), t((52, 94))), fill=colors["navy"], width=dash_width)
+    draw.line((t((204, 94)), t((223, 94))), fill=colors["navy"], width=dash_width)
 
     body = box(76, 24, 180, 194)
     draw.rounded_rectangle(body, radius=52 * scale, fill=colors["gopher"], outline=colors["navy"], width=max(2, int(4 * scale)))
@@ -215,27 +279,28 @@ def draw_symbol(draw: ImageDraw.ImageDraw, center: tuple[float, float], scale: f
         draw.ellipse((ex - er, ey - er, ex + er, ey + er), fill=colors["white"], outline=colors["navy"], width=max(2, int(4 * scale)))
         draw.ellipse((ex - pr, ey - pr, ex + pr, ey + pr), fill=colors["navy"])
 
-    draw.arc(box(118, 96, 138, 112), start=200, end=340, fill=colors["navy"], width=max(2, int(4 * scale)))
-    nose = box(118, 104, 138, 122)
-    draw.rounded_rectangle(nose, radius=8 * scale, fill=colors["white"], outline=colors["navy"], width=max(2, int(4 * scale)))
-    draw.line((t((126, 122)), t((126, 136))), fill=colors["navy"], width=max(2, int(4 * scale)))
-    draw.line((t((130, 122)), t((130, 138))), fill=colors["navy"], width=max(2, int(4 * scale)))
+    nose = box(116, 104, 140, 122)
+    draw.rounded_rectangle(nose, radius=10 * scale, fill=colors["white"], outline=colors["navy"], width=max(2, int(4 * scale)))
+    draw.line((t((122, 120)), t((122, 136))), fill=colors["navy"], width=max(2, int(4 * scale)))
+    draw.line((t((134, 120)), t((134, 136))), fill=colors["navy"], width=max(2, int(4 * scale)))
+    draw.line((t((122, 120)), t((112, 113))), fill=colors["navy"], width=max(2, int(3 * scale)))
+    draw.line((t((134, 120)), t((144, 113))), fill=colors["navy"], width=max(2, int(3 * scale)))
 
-    shield_outline = [t((80, 112)), t((128, 96)), t((176, 112)), t((168, 176)), t((128, 204)), t((88, 176))]
-    shield_fill = [t((94, 118)), t((128, 107)), t((162, 118)), t((156, 170)), t((128, 191)), t((100, 170))]
+    shield_outline = [t((78, 110)), t((128, 96)), t((178, 110)), t((170, 178)), t((128, 206)), t((86, 178))]
+    shield_fill = [t((92, 116)), t((128, 106)), t((164, 116)), t((158, 172)), t((128, 194)), t((98, 172))]
     draw.polygon(shield_outline, fill=colors["white"], outline=colors["navy"])
     draw.polygon(shield_fill, fill=colors["shield"])
 
-    lock_box = box(114, 132, 142, 160)
+    lock_box = box(112, 130, 144, 162)
     draw.rounded_rectangle(lock_box, radius=6 * scale, fill=colors["white"])
     shackle = [
-        t((118, 132)),
-        t((118, 124)),
-        t((121, 114)),
+        t((118, 130)),
+        t((118, 122)),
+        t((121, 112)),
         t((128, 110)),
-        t((135, 114)),
-        t((138, 124)),
-        t((138, 132)),
+        t((135, 112)),
+        t((138, 122)),
+        t((138, 130)),
     ]
     draw.line(shackle, fill=colors["white"], width=max(3, int(6 * scale)), joint="curve")
     key_cx, key_cy = t((128, 146))
@@ -251,19 +316,19 @@ def build_logo_svg(theme: str, background: bool, width: int, height: int) -> str
     accent = "#1E9AE6"
     subtext = "#1F3B67" if theme == "light" else "#D7E8FB"
     wave = "#1FA3F2"
-    symbol = build_symbol_group(210, 210, 0.78)
+    symbol = build_symbol_group(width / 2, 120, 1.02)
     bg = f"<rect width='{width}' height='{height}' rx='28' fill='{bg_fill}' stroke='{border}' stroke-width='2'/>" if background else ""
     return dedent(
         f"""
         <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
           {bg}
           {symbol}
-          <text x="355" y="220" font-family="{FONT_STACK}" font-size="102" font-weight="800" letter-spacing="-2">
+          <text x="{width / 2}" y="300" text-anchor="middle" font-family="{FONT_STACK}" font-size="98" font-weight="800" letter-spacing="-2">
             <tspan fill="{text_primary}">WS</tspan><tspan fill="{accent}">Auth</tspan><tspan fill="{text_primary}">Kit</tspan>
           </text>
-          <line x1="360" x2="458" y1="305" y2="305" stroke="{wave}" stroke-width="6" stroke-linecap="round"/>
-          <line x1="900" x2="998" y1="305" y2="305" stroke="{wave}" stroke-width="6" stroke-linecap="round"/>
-          <text x="480" y="318" font-family="{FONT_STACK}" font-size="26" font-weight="700" letter-spacing="2.5" fill="{subtext}">
+          <line x1="220" x2="268" y1="368" y2="368" stroke="{wave}" stroke-width="4" stroke-linecap="round"/>
+          <line x1="932" x2="980" y1="368" y2="368" stroke="{wave}" stroke-width="4" stroke-linecap="round"/>
+          <text x="{width / 2}" y="374" text-anchor="middle" font-family="{FONT_STACK}" font-size="18" font-weight="700" letter-spacing="2" fill="{subtext}">
             SECURE WEBSOCKET AUTHENTICATION FOR GO
           </text>
         </svg>

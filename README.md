@@ -7,26 +7,33 @@
   </picture>
 </p>
 
-`WSAuthKit` is a small Go library for secure WebSocket authentication with JWT.
+<p align="center">
+  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/elton-peixoto-lu/WSAuthKit/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
+  <a href="https://github.com/elton-peixoto-lu/WSAuthKit/releases"><img alt="Release" src="https://img.shields.io/github/v/release/elton-peixoto-lu/WSAuthKit?display_name=tag&style=for-the-badge&label=Release"></a>
+  <a href="https://pkg.go.dev/github.com/wsauthkit/wsauthkit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-0A1F44?style=for-the-badge&logo=go"></a>
+  <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/WSAuthKit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/WSAuthKit?style=for-the-badge"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/github/license/elton-peixoto-lu/WSAuthKit?style=for-the-badge&label=%E2%9A%96%20License"></a>
+</p>
 
-It standardizes the authentication flow that usually gets duplicated across handlers and gateway integrations:
+<p align="center">
+  Secure WebSocket JWT authentication middleware for Go.
+</p>
 
-1. extract the token from the handshake request;
-2. validate the JWT signature;
-3. validate issuer and audience;
-4. inject claims into request context;
-5. keep the WebSocket handler clean.
+`WSAuthKit` is a focused Go library that standardizes secure WebSocket authentication without turning your service into an auth framework.
 
-## Why it exists
+It keeps JWT parsing, issuer validation, audience validation, token extraction, and claim injection out of handlers so real-time services stay small, readable, and consistent.
 
-WebSocket auth often drifts into ad-hoc code:
+## Why WSAuthKit
 
-- each service parses headers a bit differently;
-- `Sec-WebSocket-Protocol` support is easy to forget;
-- handlers end up doing token work that does not belong there;
-- issuer and audience checks get skipped or applied inconsistently.
+WebSocket authentication is often implemented differently in every service:
 
-`WSAuthKit` keeps that logic in one focused middleware package with production-oriented defaults.
+- some handlers only validate the token signature
+- others forget issuer or audience checks
+- `Sec-WebSocket-Protocol` token extraction is easy to miss
+- claim parsing logic leaks into application handlers
+- gateway and browser handshake edge cases create duplicated code
+
+`WSAuthKit` solves that with one production-oriented middleware layer built specifically for Go backends.
 
 ## Features
 
@@ -35,7 +42,8 @@ WebSocket auth often drifts into ad-hoc code:
 - token extraction from `Authorization` header
 - token extraction from `Sec-WebSocket-Protocol`
 - request context claim injection
-- composable middleware with a small API surface
+- standalone auth flow support through the public API
+- functional and end-to-end test coverage
 
 ## Installation
 
@@ -43,43 +51,51 @@ WebSocket auth often drifts into ad-hoc code:
 go get github.com/wsauthkit/wsauthkit
 ```
 
-## Minimal usage
+## Quick Start
 
 ```go
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
+	"fmt"
+	"log"
+	"net/http"
 
-    "github.com/wsauthkit/wsauthkit"
+	"github.com/wsauthkit/wsauthkit"
 )
 
 func main() {
-    auth, err := wsauthkit.NewAuth(wsauthkit.Config{
-        Issuer:   "https://auth.company.com",
-        Audience: "erp-backend",
-        JWKSURL:  "https://auth.company.com/certs",
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer auth.Close()
+	auth, err := wsauthkit.NewAuth(wsauthkit.Config{
+		Issuer:   "https://auth.company.com",
+		Audience: "erp-backend",
+		JWKSURL:  "https://auth.company.com/certs",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer auth.Close()
 
-    http.Handle("/ws", auth.Middleware(http.HandlerFunc(wsHandler)))
+	http.Handle("/ws", auth.Middleware(http.HandlerFunc(wsHandler)))
 
-    log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-    claims := wsauthkit.MustClaims(r.Context())
-
-    fmt.Println("user:", claims.Subject)
+	claims := wsauthkit.MustClaims(r.Context())
+	fmt.Println("user:", claims.Subject)
 }
 ```
 
-## Supported handshake patterns
+Authentication flow handled by the middleware:
+
+1. extract token from the handshake request
+2. validate JWT signature
+3. validate issuer
+4. validate audience
+5. inject claims into request context
+6. continue to the handler
+
+## Supported Handshake Patterns
 
 ### Authorization header
 
@@ -89,64 +105,62 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### Sec-WebSocket-Protocol
 
-Useful behind API Gateway or browser-driven handshake constraints:
+Useful behind API Gateway, browser-driven handshakes, and proxy layers:
 
 ```http
 Sec-WebSocket-Protocol: graphql-ws, bearer, eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-`WSAuthKit` also accepts compact forms such as `bearer.<jwt>` when a proxy or client library serializes the token inline.
+`WSAuthKit` also supports compact token forms such as `bearer.<jwt>` when intermediaries serialize the token inline.
 
-## API
+## Public API
 
 ### Config
 
 ```go
 type Config struct {
-    Issuer       string
-    Audience     string
-    JWKSURL      string
-    SigningKey   any
-    KeyFunc      KeyFunc
-    Extractors   []TokenExtractor
-    ErrorHandler ErrorHandler
+	Issuer       string
+	Audience     string
+	JWKSURL      string
+	SigningKey   any
+	KeyFunc      KeyFunc
+	Extractors   []TokenExtractor
+	ErrorHandler ErrorHandler
 }
 ```
 
 ### Standalone flow
 
-You can also use the pieces directly:
-
 ```go
-claims, err := auth.Authenticate(r)
-if err != nil {
-    // handle unauthorized
-}
+token, err := auth.ExtractToken(r)
+claims, err := auth.ValidateToken(token)
+claims, err = auth.Authenticate(r)
 ```
 
-## Secure defaults
+## Secure Defaults
 
 - token expiration is required
 - issued-at is validated
-- a small clock skew leeway is applied
-- token internals are not leaked in HTTP error responses
+- issuer and audience checks are enforced when configured
+- token internals are not leaked in default HTTP error responses
 - the default extractor tries `Authorization` before `Sec-WebSocket-Protocol`
+- JWKS-backed validators clean up their background refresh context on `Close()`
 
 ## Testing
 
-Run unit tests by default:
+Unit tests:
 
 ```bash
 go test ./...
 ```
 
-Run functional tests:
+Functional tests:
 
 ```bash
 go test ./... -tags functional
 ```
 
-Run end-to-end WebSocket tests:
+End-to-end WebSocket tests:
 
 ```bash
 go test ./... -tags e2e
@@ -160,7 +174,7 @@ go test ./... -tags functional
 go test ./... -tags e2e
 ```
 
-## Use cases
+## Use Cases
 
 - real-time dashboards
 - WebSocket APIs
@@ -168,7 +182,7 @@ go test ./... -tags e2e
 - notification systems
 - API Gateway WebSocket integrations
 
-## Project layout
+## Project Layout
 
 ```text
 wsauthkit/
@@ -179,10 +193,32 @@ wsauthkit/
 |-- extractor.go
 |-- middleware.go
 |-- validator.go
-`-- examples/
+|-- examples/
+|-- assets/
+`-- scripts/
 ```
 
-## Branding assets
+## Security
+
+`WSAuthKit` is intended for infrastructure-grade backend services. Prefer:
+
+- strong signing algorithms such as `RS256` or `ES256`
+- strict issuer and audience validation
+- remote key rotation through `JWKSURL` where appropriate
+- short token lifetimes and explicit claim validation upstream
+
+If you discover a security issue, avoid opening a public issue with exploit details. Share it privately with the repository maintainer first.
+
+## Contributing
+
+Issues and pull requests are welcome. Keep contributions aligned with the project scope:
+
+- small
+- idiomatic Go
+- focused on WebSocket authentication
+- low abstraction and low boilerplate
+
+## Branding Assets
 
 Open-source branding files live under [`assets/`](./assets/README.md).
 
