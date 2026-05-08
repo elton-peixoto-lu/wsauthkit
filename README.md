@@ -173,6 +173,11 @@ claims, err = auth.Authenticate(r)
 - works naturally with `gorilla/websocket`
 - fits API Gateway and proxy-driven handshake patterns
 
+## Examples
+
+- basic authenticated echo server: [`examples/main.go`](./examples/main.go)
+- API Gateway style subprotocol extraction with Gorilla WebSocket: [`examples/apigateway/main.go`](./examples/apigateway/main.go)
+
 ## Secure Defaults
 
 - token expiration is required
@@ -285,6 +290,10 @@ Open-source branding files live under [`assets/`](./assets/README.md).
 ## Changelog
 
 Release history lives in [`CHANGELOG.md`](./CHANGELOG.md).
+
+## Launch Copy
+
+Short launch post drafts live under [`docs/`](./docs/).
 
 ## License
 
