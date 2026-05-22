@@ -1,6 +1,6 @@
-# AWS + Keycloak Test Matrix
+# AWS + OIDC Test Matrix
 
-This document consolidates the latest validation results for the `WSAuthKit` AWS API Gateway + Keycloak flow.
+This document consolidates the latest validation results for the `WSAuthKit` AWS API Gateway + OIDC flow.
 
 Execution date: **May 8, 2026**
 
@@ -106,7 +106,7 @@ ok  	github.com/elton-peixoto-lu/wsauthkit/examples/apigateway-lambda-keycloak	0
 
 Validated behaviors:
 
-- full connect handler flow with Keycloak-style JWT + JWKS
+- full connect handler flow with OIDC-style JWT + JWKS
 - invalid-token rejection path
 
 ### LocalStack Smoke

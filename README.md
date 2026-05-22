@@ -340,7 +340,7 @@ make release-check
 
 Environment-specific smoke test notes live in [`docs/test-results/localstack-smoke.md`](./docs/test-results/localstack-smoke.md).
 
-Consolidated AWS + OIDC validation results live in [`docs/test-results/aws-keycloak-test-matrix.md`](./docs/test-results/aws-keycloak-test-matrix.md).
+Consolidated AWS + OIDC validation results live in [`docs/test-results/aws-oidc-test-matrix.md`](./docs/test-results/aws-oidc-test-matrix.md).
 
 ## Use Cases
 

@@ -11,6 +11,13 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.2.1] - 2026-05-22
+
+### Fixed
+
+- renamed the matrix artifact to `docs/test-results/aws-oidc-test-matrix.md` for OIDC-consistent naming
+- updated README and documentation references to the new matrix filename
+
 ## [v0.2.0] - 2026-05-22
 
 ### Added
@@ -29,7 +36,7 @@ Current release policy:
 
 ### Added
 
-- consolidated AWS + Keycloak validation matrix in `docs/test-results/aws-keycloak-test-matrix.md`
+- consolidated AWS + OIDC validation matrix in `docs/test-results/aws-oidc-test-matrix.md`
 - explicit README section describing the concrete problems WSAuthKit solves
 - LocalStack smoke-test artifacts and execution notes under `docs/test-results/`
 
