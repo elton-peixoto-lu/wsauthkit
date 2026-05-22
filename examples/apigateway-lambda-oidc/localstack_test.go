@@ -46,8 +46,8 @@ func TestLocalStackWebSocketConnectFlow(t *testing.T) {
 	apiEndpoint := provisionWebSocketAPI(t, projectRoot, lambdaZipPath, jwksServer.url)
 	websocketURL := websocketEndpoint(apiEndpoint)
 	validToken := signLocalStackToken(t, jwksServer.privateKey, "localstack-key", jwt.MapClaims{
-		"iss":                keycloakIssuer,
-		"aud":                keycloakAudience,
+		"iss":                oidcIssuer,
+		"aud":                oidcAudience,
 		"sub":                "localstack-user",
 		"preferred_username": "carol",
 		"exp":                time.Now().Add(5 * time.Minute).Unix(),
@@ -153,7 +153,7 @@ func buildLambdaArchive(t *testing.T, projectRoot string) string {
 	binaryPath := filepath.Join(tempDir, "bootstrap")
 	archivePath := filepath.Join(tempDir, "function.zip")
 
-	buildCommand := exec.Command("go", "build", "-o", binaryPath, "./examples/apigateway-lambda-keycloak")
+	buildCommand := exec.Command("go", "build", "-o", binaryPath, "./examples/apigateway-lambda-oidc")
 	buildCommand.Dir = projectRoot
 	buildCommand.Env = append(os.Environ(),
 		"GOOS=linux",
@@ -253,7 +253,7 @@ func createLambdaFunction(t *testing.T, projectRoot, lambdaZipPath, jwksURL stri
 		"--zip-file", "fileb:///tmp/function.zip",
 		"--role", localStackRoleARN,
 		"--architectures", "x86_64",
-		"--environment", fmt.Sprintf("Variables={KEYCLOAK_ISSUER=%s,KEYCLOAK_AUDIENCE=%s,KEYCLOAK_JWKS_URL=%s}", keycloakIssuer, keycloakAudience, jwksURL),
+		"--environment", fmt.Sprintf("Variables={OIDC_ISSUER=%s,OIDC_AUDIENCE=%s,OIDC_JWKS_URL=%s}", oidcIssuer, oidcAudience, jwksURL),
 	)
 	if !strings.Contains(output, localStackLambdaName) {
 		t.Fatalf("unexpected lambda create output: %s", output)

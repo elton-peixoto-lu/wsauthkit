@@ -22,7 +22,7 @@ func TestFunctionalAuthenticateWithRemoteJWKS(t *testing.T) {
 
 	privateKey, jwksURL := newGatewayJWKSServer(t)
 	auth, err := NewAuth(Config{
-		Issuer:   "https://keycloak.example.com/realms/platform",
+		Issuer:   "https://oidc.example.com/realms/platform",
 		Audience: "ws-backend",
 		JWKSURL:  jwksURL,
 	})
@@ -36,7 +36,7 @@ func TestFunctionalAuthenticateWithRemoteJWKS(t *testing.T) {
 	})
 
 	token := signGatewayRSAToken(t, privateKey, "gateway-key", jwt.MapClaims{
-		"iss":                "https://keycloak.example.com/realms/platform",
+		"iss":                "https://oidc.example.com/realms/platform",
 		"aud":                "ws-backend",
 		"sub":                "gateway-user",
 		"preferred_username": "alice",
@@ -66,7 +66,7 @@ func TestFunctionalAuthenticateWithCustomQueryParameterName(t *testing.T) {
 
 	privateKey, jwksURL := newGatewayJWKSServer(t)
 	auth, err := NewAuth(Config{
-		Issuer:              "https://keycloak.example.com/realms/platform",
+		Issuer:              "https://oidc.example.com/realms/platform",
 		Audience:            "ws-backend",
 		JWKSURL:             jwksURL,
 		QueryParameterNames: []string{"authToken"},
@@ -81,7 +81,7 @@ func TestFunctionalAuthenticateWithCustomQueryParameterName(t *testing.T) {
 	})
 
 	token := signGatewayRSAToken(t, privateKey, "gateway-key", jwt.MapClaims{
-		"iss": "https://keycloak.example.com/realms/platform",
+		"iss": "https://oidc.example.com/realms/platform",
 		"aud": "ws-backend",
 		"sub": "query-user",
 		"exp": time.Now().Add(5 * time.Minute).Unix(),
@@ -98,6 +98,45 @@ func TestFunctionalAuthenticateWithCustomQueryParameterName(t *testing.T) {
 	}
 
 	if claims.Subject != "query-user" {
+		t.Fatalf("unexpected subject: %s", claims.Subject)
+	}
+}
+
+func TestFunctionalAuthenticateWithDexStyleJWKS(t *testing.T) {
+	t.Parallel()
+
+	privateKey, jwksURL := newGatewayDexStyleJWKSServer(t)
+	auth, err := NewAuth(Config{
+		Issuer:   "https://dex.example.com",
+		Audience: "ws-backend",
+		JWKSURL:  jwksURL,
+	})
+	if err != nil {
+		t.Fatalf("new auth: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := auth.Close(); err != nil {
+			t.Fatalf("close auth: %v", err)
+		}
+	})
+
+	token := signGatewayRSAToken(t, privateKey, "gateway-key", jwt.MapClaims{
+		"iss": "https://dex.example.com",
+		"aud": "ws-backend",
+		"sub": "dex-gateway-user",
+		"exp": time.Now().Add(5 * time.Minute).Unix(),
+		"iat": time.Now().Add(-1 * time.Minute).Unix(),
+	})
+
+	claims, err := auth.Authenticate(events.APIGatewayWebsocketProxyRequest{
+		Headers: map[string]string{
+			"Authorization": "Bearer " + token,
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if claims.Subject != "dex-gateway-user" {
 		t.Fatalf("unexpected subject: %s", claims.Subject)
 	}
 }
@@ -140,6 +179,51 @@ func newGatewayJWKSServer(t *testing.T) (*rsa.PrivateKey, string) {
 	t.Cleanup(server.Close)
 
 	return privateKey, server.URL
+}
+
+func newGatewayDexStyleJWKSServer(t *testing.T) (*rsa.PrivateKey, string) {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate rsa key: %v", err)
+	}
+
+	jwkStorage := jwkset.NewMemoryStorage()
+	publicJWK, err := jwkset.NewJWKFromKey(privateKey.Public(), jwkset.JWKOptions{
+		Metadata: jwkset.JWKMetadataOptions{
+			ALG: jwkset.AlgRS256,
+			KID: "gateway-key",
+			USE: jwkset.UseSig,
+		},
+	})
+	if err != nil {
+		t.Fatalf("create jwk: %v", err)
+	}
+	if err := jwkStorage.KeyWrite(context.Background(), publicJWK); err != nil {
+		t.Fatalf("write jwk: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/keys" {
+			http.NotFound(w, r)
+			return
+		}
+
+		payload, err := jwkStorage.JSONPublic(r.Context())
+		if err != nil {
+			t.Errorf("jwks json: %v", err)
+			http.Error(w, "jwks unavailable", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(payload)
+	}))
+
+	t.Cleanup(server.Close)
+
+	return privateKey, server.URL + "/keys"
 }
 
 func signGatewayRSAToken(t *testing.T, privateKey *rsa.PrivateKey, keyID string, claims jwt.MapClaims) string {

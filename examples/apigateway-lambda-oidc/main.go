@@ -12,22 +12,22 @@ import (
 )
 
 const (
-	defaultKeycloakIssuer   = "https://keycloak.example.com/realms/platform"
-	defaultKeycloakAudience = "ws-backend"
-	defaultKeycloakJWKSURL  = "https://keycloak.example.com/realms/platform/protocol/openid-connect/certs"
+	defaultOIDCIssuer   = "https://oidc.example.com/realms/platform"
+	defaultOIDCAudience = "ws-backend"
+	defaultOIDCJWKSURL  = "https://oidc.example.com/realms/platform/protocol/openid-connect/certs"
 )
 
 var (
-	keycloakIssuer   = getenvOrDefault("KEYCLOAK_ISSUER", defaultKeycloakIssuer)
-	keycloakAudience = getenvOrDefault("KEYCLOAK_AUDIENCE", defaultKeycloakAudience)
-	keycloakJWKSURL  = getenvOrDefault("KEYCLOAK_JWKS_URL", defaultKeycloakJWKSURL)
+	oidcIssuer   = getenvOrDefault("OIDC_ISSUER", defaultOIDCIssuer)
+	oidcAudience = getenvOrDefault("OIDC_AUDIENCE", defaultOIDCAudience)
+	oidcJWKSURL  = getenvOrDefault("OIDC_JWKS_URL", defaultOIDCJWKSURL)
 )
 
 func main() {
 	auth, err := apigateway.NewAuth(apigateway.Config{
-		Issuer:   keycloakIssuer,
-		Audience: keycloakAudience,
-		JWKSURL:  keycloakJWKSURL,
+		Issuer:   oidcIssuer,
+		Audience: oidcAudience,
+		JWKSURL:  oidcJWKSURL,
 	})
 	if err != nil {
 		log.Fatal(err)

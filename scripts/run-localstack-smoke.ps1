@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
 Push-Location $repoRoot
 try {
-    go test ./examples/apigateway-lambda-keycloak -tags localstack -v | Tee-Object -FilePath $resultsFile
+    go test ./examples/apigateway-lambda-oidc -tags localstack -v | Tee-Object -FilePath $resultsFile
 }
 finally {
     Pop-Location

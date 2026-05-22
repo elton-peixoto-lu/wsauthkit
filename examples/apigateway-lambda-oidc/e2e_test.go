@@ -19,12 +19,12 @@ import (
 	"github.com/elton-peixoto-lu/wsauthkit/apigateway"
 )
 
-func TestE2ELambdaConnectHandlerWithKeycloakStyleJWKS(t *testing.T) {
+func TestE2ELambdaConnectHandlerWithOIDCStyleJWKS(t *testing.T) {
 	t.Parallel()
 
 	privateKey, jwksURL := newLambdaJWKSServer(t)
 	auth, err := apigateway.NewAuth(apigateway.Config{
-		Issuer:   "https://keycloak.example.com/realms/platform",
+		Issuer:   "https://oidc.example.com/realms/platform",
 		Audience: "ws-backend",
 		JWKSURL:  jwksURL,
 	})
@@ -39,7 +39,7 @@ func TestE2ELambdaConnectHandlerWithKeycloakStyleJWKS(t *testing.T) {
 
 	handler := newConnectHandler(auth)
 	token := signLambdaRSAToken(t, privateKey, "lambda-key", jwt.MapClaims{
-		"iss":                "https://keycloak.example.com/realms/platform",
+		"iss":                "https://oidc.example.com/realms/platform",
 		"aud":                "ws-backend",
 		"sub":                "lambda-user",
 		"preferred_username": "bob",
@@ -71,7 +71,7 @@ func TestE2ELambdaConnectHandlerRejectsInvalidToken(t *testing.T) {
 
 	privateKey, jwksURL := newLambdaJWKSServer(t)
 	auth, err := apigateway.NewAuth(apigateway.Config{
-		Issuer:   "https://keycloak.example.com/realms/platform",
+		Issuer:   "https://oidc.example.com/realms/platform",
 		Audience: "ws-backend",
 		JWKSURL:  jwksURL,
 	})
@@ -86,7 +86,7 @@ func TestE2ELambdaConnectHandlerRejectsInvalidToken(t *testing.T) {
 
 	handler := newConnectHandler(auth)
 	token := signLambdaRSAToken(t, privateKey, "wrong-key", jwt.MapClaims{
-		"iss": "https://keycloak.example.com/realms/platform",
+		"iss": "https://oidc.example.com/realms/platform",
 		"aud": "ws-backend",
 		"sub": "bad-user",
 		"exp": time.Now().Add(5 * time.Minute).Unix(),

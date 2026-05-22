@@ -61,10 +61,12 @@ WebSocket authentication is often implemented differently in every service:
 
 - JWT validation with `SigningKey`, custom `KeyFunc`, or remote `JWKSURL`
 - issuer and audience validation
+- provider-agnostic OIDC/JWT support (Dex, OIDC, Auth0, Cognito, Entra ID, etc.)
 - token extraction from `Authorization` header
 - token extraction from `Sec-WebSocket-Protocol`
 - request context claim injection
 - standalone auth flow support through the public API
+- optional authorization primitives for RBAC and ReBAC composition
 - functional and end-to-end test coverage
 
 ## Installation
@@ -194,7 +196,8 @@ claims, err = auth.Authenticate(r)
 
 - basic authenticated echo server: [`examples/main.go`](./examples/main.go)
 - API Gateway style subprotocol extraction with Gorilla WebSocket: [`examples/apigateway/main.go`](./examples/apigateway/main.go)
-- API Gateway WebSocket Lambda with Keycloak JWKS validation: [`examples/apigateway-lambda-keycloak/main.go`](./examples/apigateway-lambda-keycloak/main.go)
+- API Gateway WebSocket Lambda with OIDC JWKS validation: [`examples/apigateway-lambda-oidc/main.go`](./examples/apigateway-lambda-oidc/main.go)
+- API Gateway WebSocket Lambda with OIDC-style JWKS validation: [`examples/apigateway-lambda-oidc/main.go`](./examples/apigateway-lambda-oidc/main.go)
 
 ## AWS API Gateway
 
@@ -202,9 +205,9 @@ claims, err = auth.Authenticate(r)
 
 ```go
 auth, err := apigateway.NewAuth(apigateway.Config{
-	Issuer:   "https://keycloak.example.com/realms/platform",
+	Issuer:   "https://dex.example.com",
 	Audience: "ws-backend",
-	JWKSURL:  "https://keycloak.example.com/realms/platform/protocol/openid-connect/certs",
+	JWKSURL:  "https://dex.example.com/keys",
 })
 
 claims, err := auth.Authenticate(event)
@@ -216,7 +219,36 @@ This adapter is intentionally narrow:
 - it extracts tokens from headers, query string, and `Sec-WebSocket-Protocol`
 - it reuses the same JWT validation model as the core library
 - it does not manage connection storage or API Gateway callback delivery
-- it can be smoke-tested locally with the optional LocalStack flow under `examples/apigateway-lambda-keycloak`
+- it can be smoke-tested locally with the optional LocalStack flow under `examples/apigateway-lambda-oidc`
+
+## Authorization Extensions (RBAC + ReBAC)
+
+`WSAuthKit` keeps authentication and authorization decoupled.
+
+Use `Authorizer` to plug your policy engine without coupling to a specific IdP:
+
+```go
+rbac := wsauthkit.RBACAuthorizer{
+	RoleClaim: "roles",
+	Policies: map[string][]string{
+		"admin": {"*:*"},
+		"viewer": {"read:workspace/123"},
+	},
+}
+
+rebac := wsauthkit.ReBACAuthorizer{
+	Checker: myRelationChecker, // e.g. OpenFGA/SpiceDB adapter
+}
+
+authorizer := wsauthkit.AnyAuthorizer{rbac, rebac}
+allowed, err := authorizer.Authorize(ctx, wsauthkit.AuthorizationInput{
+	Claims: claims,
+	Action: "read",
+	Resource: "workspace/123",
+})
+```
+
+This pattern enables simple RBAC first, and gradual evolution to ReBAC for multi-tenant and graph-style access rules.
 
 ## Secure Defaults
 
@@ -271,10 +303,16 @@ go test ./... -tags e2e
 make test-e2e
 ```
 
+Real Dex end-to-end test:
+
+```bash
+make test-dex-e2e
+```
+
 LocalStack smoke test:
 
 ```bash
-go test ./examples/apigateway-lambda-keycloak -tags localstack -v
+go test ./examples/apigateway-lambda-oidc -tags localstack -v
 ```
 
 ```bash
@@ -302,7 +340,7 @@ make release-check
 
 Environment-specific smoke test notes live in [`docs/test-results/localstack-smoke.md`](./docs/test-results/localstack-smoke.md).
 
-Consolidated AWS + Keycloak validation results live in [`docs/test-results/aws-keycloak-test-matrix.md`](./docs/test-results/aws-keycloak-test-matrix.md).
+Consolidated AWS + OIDC validation results live in [`docs/test-results/aws-keycloak-test-matrix.md`](./docs/test-results/aws-keycloak-test-matrix.md).
 
 ## Use Cases
 

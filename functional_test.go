@@ -49,6 +49,37 @@ func TestFunctionalAuthenticateWithRemoteJWKS(t *testing.T) {
 	}
 }
 
+func TestFunctionalAuthenticateWithDexStyleJWKS(t *testing.T) {
+	t.Parallel()
+
+	privateKey, jwksServerURL := newDexStyleJWKSTestServer(t)
+
+	auth := newTestAuth(t, Config{
+		Issuer:   "https://dex.example.com",
+		Audience: "ws-backend",
+		JWKSURL:  jwksServerURL,
+	})
+
+	token := signRSATestToken(t, privateKey, "test-key", jwt.MapClaims{
+		"iss": "https://dex.example.com",
+		"aud": "ws-backend",
+		"sub": "dex-user",
+		"exp": time.Now().Add(5 * time.Minute).Unix(),
+		"iat": time.Now().Add(-1 * time.Minute).Unix(),
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/ws", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	claims, err := auth.Authenticate(request)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if claims.Subject != "dex-user" {
+		t.Fatalf("unexpected subject: %s", claims.Subject)
+	}
+}
+
 func TestFunctionalDefaultErrorResponses(t *testing.T) {
 	t.Parallel()
 
@@ -219,6 +250,52 @@ func newRemoteJWKSTestServer(t *testing.T) (*rsa.PrivateKey, string) {
 	t.Cleanup(jwksServer.Close)
 
 	return privateKey, jwksServer.URL
+}
+
+func newDexStyleJWKSTestServer(t *testing.T) (*rsa.PrivateKey, string) {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate rsa key: %v", err)
+	}
+
+	jwkStorage := jwkset.NewMemoryStorage()
+	publicJWK, err := jwkset.NewJWKFromKey(privateKey.Public(), jwkset.JWKOptions{
+		Metadata: jwkset.JWKMetadataOptions{
+			ALG: jwkset.AlgRS256,
+			KID: "test-key",
+			USE: jwkset.UseSig,
+		},
+	})
+	if err != nil {
+		t.Fatalf("create public jwk: %v", err)
+	}
+
+	if err := jwkStorage.KeyWrite(context.Background(), publicJWK); err != nil {
+		t.Fatalf("write public jwk: %v", err)
+	}
+
+	jwksServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/keys" {
+			http.NotFound(w, r)
+			return
+		}
+
+		jsonBody, err := jwkStorage.JSONPublic(r.Context())
+		if err != nil {
+			t.Errorf("marshal jwks: %v", err)
+			http.Error(w, "jwks unavailable", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(jsonBody)
+	}))
+
+	t.Cleanup(jwksServer.Close)
+
+	return privateKey, jwksServer.URL + "/keys"
 }
 
 func signRSATestToken(t *testing.T, privateKey *rsa.PrivateKey, keyID string, claims jwt.MapClaims) string {
