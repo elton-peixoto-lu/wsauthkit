@@ -1,0 +1,9 @@
+services:
+  dex:
+    image: ghcr.io/dexidp/dex:v2.41.1
+    container_name: wsauthkit-dex
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    ports:
+      - "5556:5556"
+    volumes:
+      - ./testdata/dex/config.yaml:/etc/dex/config.yaml:ro

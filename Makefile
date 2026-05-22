@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: test test-integration test-functional test-e2e test-localstack test-all release-check tidy
+.PHONY: test test-integration test-functional test-e2e test-dex-e2e test-localstack test-all release-check tidy
 
 test:
 	go test ./...
@@ -14,8 +14,11 @@ test-functional:
 test-e2e:
 	go test ./... -tags e2e
 
+test-dex-e2e:
+	./scripts/test-dex-e2e.sh
+
 test-localstack:
-	go test ./examples/apigateway-lambda-keycloak -tags localstack -v
+	go test ./examples/apigateway-lambda-oidc -tags localstack -v
 
 test-all: test test-integration test-functional test-e2e
 

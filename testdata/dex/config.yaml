@@ -1,0 +1,27 @@
+issuer: http://127.0.0.1:5556/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+oauth2:
+  responseTypes: ["code", "token", "id_token"]
+  skipApprovalScreen: true
+  passwordConnector: local
+
+enablePasswordDB: true
+
+staticClients:
+  - id: wsauthkit-e2e
+    redirectURIs:
+      - 'http://127.0.0.1:18080/callback'
+    name: 'WSAuthKit E2E Client'
+    secret: wsauthkit-secret
+
+staticPasswords:
+  - email: e2e-user@example.com
+    hash: "$2y$10$WtE0BkSITeCRjMA8lopZgerk23WJLgT4hdQ3XmStOKskRRajzab36"
+    username: e2e-user
+    userID: 08a8684b-db88-4b73-90a9-3cd1661f5466

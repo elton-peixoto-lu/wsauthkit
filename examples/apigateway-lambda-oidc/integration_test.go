@@ -21,7 +21,7 @@ func TestIntegrationLambdaConnectHandlerAcceptsAuthorizationHeader(t *testing.T)
 	auth := newIntegrationAuth(t)
 	handler := newConnectHandler(auth)
 	token := signIntegrationToken(t, []byte("integration-secret"), jwt.MapClaims{
-		"iss": "https://keycloak.example.com/realms/platform",
+		"iss": "https://oidc.example.com/realms/platform",
 		"aud": "ws-backend",
 		"sub": "integration-user",
 		"exp": time.Now().Add(5 * time.Minute).Unix(),
@@ -69,8 +69,8 @@ func newIntegrationAuth(t *testing.T) *apigateway.Auth {
 	t.Helper()
 
 	auth, err := apigateway.NewAuth(apigateway.Config{
-		Issuer:     keycloakIssuer,
-		Audience:   keycloakAudience,
+		Issuer:     oidcIssuer,
+		Audience:   oidcAudience,
 		SigningKey: []byte("integration-secret"),
 	})
 	if err != nil {
