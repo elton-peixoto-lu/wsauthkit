@@ -11,6 +11,14 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.3.0] - 2026-05-25
+
+### Added
+
+- optional typed claims mapping helper layer with `MapClaims[T]`
+- `ClaimReader` typed accessors for common claim projections (`String`, `RequiredString`, `Strings`, `Bool`, `Int64`)
+- tests and README example for mapping validated claims into application-specific structs
+
 ## [v0.2.1] - 2026-05-22
 
 ### Fixed
