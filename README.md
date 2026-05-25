@@ -204,6 +204,30 @@ claims, err := auth.ValidateToken(token)
 claims, err = auth.Authenticate(r)
 ```
 
+### Optional typed claim mapping
+
+```go
+type Identity struct {
+	UserID   string
+	TenantID string
+	Roles    []string
+}
+
+identity, err := wsauthkit.MapClaims(claims, func(r wsauthkit.ClaimReader) (Identity, error) {
+	tenantID, err := r.RequiredString("tenant_id")
+	if err != nil {
+		return Identity{}, err
+	}
+	roles, _ := r.Strings("roles")
+
+	return Identity{
+		UserID:   r.Subject(),
+		TenantID: tenantID,
+		Roles:    roles,
+	}, nil
+})
+```
+
 ## Compatibility
 
 - built on top of standard `net/http`
