@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: test test-integration test-functional test-e2e test-dex-e2e test-localstack test-all release-check tidy
+.PHONY: test test-integration test-functional test-e2e test-dex-e2e test-localstack test-adapters test-all release-check tidy
 
 test:
 	go test ./...
@@ -20,7 +20,12 @@ test-dex-e2e:
 test-localstack:
 	go test ./examples/apigateway-lambda-oidc -tags localstack -v
 
-test-all: test test-integration test-functional test-e2e
+test-adapters:
+	for adapter in gin echo fiber; do \
+		(cd adapters/$$adapter && go build ./... && go vet ./... && go test ./...) || exit 1; \
+	done
+
+test-all: test test-integration test-functional test-e2e test-adapters
 
 release-check: tidy test-all
 

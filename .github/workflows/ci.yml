@@ -71,3 +71,26 @@ jobs:
 
       - name: Run e2e tests
         run: go test ./... -tags e2e -coverprofile=coverage-e2e.out
+
+  adapters:
+    name: Framework Adapters (${{ matrix.adapter }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        adapter: [gin, echo, fiber]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: adapters/${{ matrix.adapter }}/go.mod
+
+      - name: Build and test adapter
+        working-directory: adapters/${{ matrix.adapter }}
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...

@@ -11,6 +11,14 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.4.1] - 2026-08-01
+
+### Fixed
+
+- CI now builds, vets, and tests the `adapters/gin`, `adapters/echo`, and `adapters/fiber` modules. They previously shipped in v0.4.0 with zero CI coverage, because each adapter is a separate Go module and the root `go test ./...` job never descends into them.
+- `make test-all` / `make release-check` run the same adapter checks locally via a new `test-adapters` target, so this can't silently regress again.
+- added a real functional test per adapter (valid token authenticates, missing token gets a 401) instead of relying on "it compiles" as the only signal.
+
 ## [v0.4.0] - 2026-08-01
 
 ### Added
