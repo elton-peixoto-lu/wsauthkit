@@ -123,6 +123,23 @@ func SecWebSocketProtocolExtractor() TokenExtractor {
 	})
 }
 
+// CookieExtractor extracts a JWT from a named cookie.
+//
+// Useful for browser WebSocket clients: browser WebSocket APIs cannot set an
+// Authorization header on the handshake request, but cookies are sent
+// automatically. Pair this with an OriginValidator to mitigate cross-site
+// WebSocket hijacking when relying on cookie-based extraction.
+func CookieExtractor(cookieName string) TokenExtractor {
+	return TokenExtractorFunc(func(request *http.Request) (string, error) {
+		cookie, err := request.Cookie(cookieName)
+		if err != nil || strings.TrimSpace(cookie.Value) == "" {
+			return "", ErrTokenMissing
+		}
+
+		return strings.TrimSpace(cookie.Value), nil
+	})
+}
+
 func splitHeaderList(value string) []string {
 	chunks := strings.Split(value, ",")
 	out := make([]string, 0, len(chunks))

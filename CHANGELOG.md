@@ -11,6 +11,21 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.4.0] - 2026-08-01
+
+### Added
+
+- `CookieExtractor` for browser-driven WebSocket clients that rely on cookies instead of the `Authorization` header
+- `OriginValidator` / `AllowedOrigins` to mitigate cross-site WebSocket hijacking (CSWSH)
+- `Revoker` interface, checked during `Authenticate`, for logout/ban/compromise revocation
+- `Auth.Reverify` helper to periodically re-check expiry and revocation on long-lived WebSocket connections
+- `Auth.HandleError` exported so framework adapters can reuse the configured `ErrorHandler`
+- `Config.Issuers` / `Config.Audiences` for multi-issuer and multi-audience validation (multi-tenant IdP setups)
+- `Config.JWKSRequestTimeout`, `Config.JWKSRefreshInterval`, `Config.JWKSRefreshErrorHandler` for JWKS fetch/refresh control
+- `Config.OnAuthResult` hook for wiring in metrics/observability without coupling to a specific backend
+- `wsauthkittest` package with `ClaimsBuilder`, `FakeValidator`, and `FakeRevoker` test doubles
+- framework adapters as separate Go modules: `adapters/gin`, `adapters/echo`, `adapters/fiber`
+
 ## [v0.3.0] - 2026-05-25
 
 ### Added
