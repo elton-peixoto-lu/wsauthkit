@@ -364,6 +364,20 @@ allowed, err := authorizer.Authorize(ctx, wsauthkit.AuthorizationInput{
 
 This pattern enables simple RBAC first, and gradual evolution to ReBAC for multi-tenant and graph-style access rules.
 
+### Batch authorization
+
+Checking many resources against the same subject/action — e.g. "which of these rooms can this user see on reconnect" — one at a time means one remote call per resource. `AuthorizeBatch` avoids that:
+
+```go
+results, err := authorizer.AuthorizeBatch(ctx, wsauthkit.AuthorizationInput{
+	Claims: claims,
+	Action: "read",
+}, []string{"workspace/1", "workspace/2", "workspace/3"})
+// results["workspace/1"] == true/false, ...
+```
+
+`RBACAuthorizer` and `AnyAuthorizer` always support it. For `ReBACAuthorizer`, if `Checker` implements `BatchRelationChecker` (e.g. a SpiceDB/OpenFGA bulk-check adapter), it's used directly as a single remote call; otherwise `AuthorizeBatch` falls back to bounded-concurrency `HasRelation` calls so N resources don't serialize into N round trips.
+
 ## Secure Defaults
 
 - token expiration is required

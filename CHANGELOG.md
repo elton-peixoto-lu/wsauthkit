@@ -11,6 +11,17 @@ Current release policy:
 - minor releases are used for additive improvements
 - a future `v1.0.0` will mark a more stable public API contract
 
+## [v0.5.0] - 2026-08-01
+
+### Added
+
+- `AuthorizeBatch` on `RBACAuthorizer`, `ReBACAuthorizer`, and `AnyAuthorizer` for checking one subject/action against many resources in a single call
+- `BatchRelationChecker`, an optional `RelationChecker` extension for ReBAC engines that support bulk checks (e.g. SpiceDB/OpenFGA bulk-check APIs); `ReBACAuthorizer.AuthorizeBatch` uses it directly when available, and otherwise falls back to bounded-concurrency `HasRelation` calls instead of serializing one round trip per resource
+
+### Motivation
+
+`RelationChecker.HasRelation` only ever checked one resource at a time. A common real-world case — "which of these rooms/workspaces can this reconnecting user see" — turned into N sequential remote calls to the ReBAC backend per reconnect. `AuthorizeBatch` gives that case a single-call path when the backend supports it, and a bounded fan-out otherwise, without changing the existing single-resource `Authorize` API.
+
 ## [v0.4.1] - 2026-08-01
 
 ### Fixed
