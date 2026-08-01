@@ -12,7 +12,6 @@
   <a href="https://github.com/elton-peixoto-lu/wsauthkit/releases"><img alt="Version" src="https://img.shields.io/github/v/release/elton-peixoto-lu/wsauthkit?display_name=tag&sort=semver&style=for-the-badge&label=Version"></a>
   <a href="https://pkg.go.dev/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-007d9c?style=for-the-badge&logo=go"></a>
   <a href="https://proxy.golang.org/github.com/elton-peixoto-lu/wsauthkit/@v/list"><img alt="Go Module" src="https://img.shields.io/badge/go-module-0A1F44?style=for-the-badge&logo=go"></a>
-  <a href="https://goreportcard.com/report/github.com/elton-peixoto-lu/wsauthkit"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/elton-peixoto-lu/wsauthkit?style=for-the-badge"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/%E2%9A%96%20License-MIT-0A1F44?style=for-the-badge"></a>
 </p>
 
