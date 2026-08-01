@@ -211,6 +211,86 @@ func TestFunctionalStandaloneAPIFlow(t *testing.T) {
 	}
 }
 
+func TestFunctionalCookieExtractionWithOriginValidation(t *testing.T) {
+	t.Parallel()
+
+	auth := newTestAuth(t, Config{
+		Issuer:          "https://issuer.example.com",
+		Audience:        "dashboard",
+		SigningKey:      []byte("secret"),
+		Extractors:      []TokenExtractor{CookieExtractor("session")},
+		OriginValidator: AllowedOrigins("https://app.example.com"),
+	})
+
+	token := signTestToken(t, []byte("secret"), defaultTestClaims())
+
+	handler := auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(MustClaims(r.Context()).Subject))
+	}))
+
+	t.Run("trusted origin with cookie succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodGet, "/ws", nil)
+		request.Header.Set("Origin", "https://app.example.com")
+		request.AddCookie(&http.Cookie{Name: "session", Value: token})
+
+		handler.ServeHTTP(recorder, request)
+
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
+		}
+		if recorder.Body.String() != "user-123" {
+			t.Fatalf("unexpected body: %q", recorder.Body.String())
+		}
+	})
+
+	t.Run("untrusted origin is rejected before token is read", func(t *testing.T) {
+		t.Parallel()
+
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodGet, "/ws", nil)
+		request.Header.Set("Origin", "https://evil.example.com")
+		request.AddCookie(&http.Cookie{Name: "session", Value: token})
+
+		handler.ServeHTTP(recorder, request)
+
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401, got %d", recorder.Code)
+		}
+	})
+}
+
+func TestFunctionalRevokerRejectsHandshake(t *testing.T) {
+	t.Parallel()
+
+	auth := newTestAuth(t, Config{
+		Issuer:     "https://issuer.example.com",
+		Audience:   "dashboard",
+		SigningKey: []byte("secret"),
+		Revoker: RevokerFunc(func(_ context.Context, claims *Claims) (bool, error) {
+			return claims.Subject == "user-123", nil
+		}),
+	})
+
+	token := signTestToken(t, []byte("secret"), defaultTestClaims())
+
+	handler := auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be reached for a revoked token")
+	}))
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/ws", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", recorder.Code)
+	}
+}
+
 func newRemoteJWKSTestServer(t *testing.T) (*rsa.PrivateKey, string) {
 	t.Helper()
 

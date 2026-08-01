@@ -11,4 +11,6 @@ var (
 	ErrInvalidAuthorization      = errors.New("wsauthkit: invalid authorization header")
 	ErrInvalidSecWebSocketHeader = errors.New("wsauthkit: invalid Sec-WebSocket-Protocol header")
 	ErrInvalidToken              = errors.New("wsauthkit: invalid token")
+	ErrOriginNotAllowed          = errors.New("wsauthkit: origin not allowed")
+	ErrTokenRevoked              = errors.New("wsauthkit: token revoked")
 )

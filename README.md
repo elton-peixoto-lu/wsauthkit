@@ -65,10 +65,17 @@ WebSocket authentication is often implemented differently in every service:
 - provider-agnostic OIDC/JWT support (Dex, OIDC, Auth0, Cognito, Entra ID, etc.)
 - token extraction from `Authorization` header
 - token extraction from `Sec-WebSocket-Protocol`
+- token extraction from a named cookie, for browser clients that can't set `Authorization` on a WS handshake
 - request context claim injection
 - standalone auth flow support through the public API
 - optional authorization primitives for RBAC and ReBAC composition
+- Origin allowlisting to mitigate cross-site WebSocket hijacking (CSWSH)
+- pluggable token revocation, checked at handshake time and optionally re-checked on long-lived connections
+- multi-issuer / multi-audience validation for multi-tenant IdP setups
+- configurable JWKS request timeout and refresh interval
+- an `OnAuthResult` hook for wiring in metrics/observability
 - functional and end-to-end test coverage
+- exported test doubles (`wsauthkittest`) and adapters for Gin, Echo, and Fiber
 
 ## Installation
 
@@ -226,6 +233,70 @@ identity, err := wsauthkit.MapClaims(claims, func(r wsauthkit.ClaimReader) (Iden
 		Roles:    roles,
 	}, nil
 })
+```
+
+## Cookies, Origin Validation, and Revocation
+
+Browser WebSocket clients cannot set an `Authorization` header on the handshake request, so cookie-based extraction is a common pattern. Pair it with an `OriginValidator` to avoid cross-site WebSocket hijacking (CSWSH):
+
+```go
+auth, err := wsauthkit.NewAuth(wsauthkit.Config{
+	Issuer:          "https://auth.company.com",
+	Audience:        "erp-backend",
+	JWKSURL:         "https://auth.company.com/certs",
+	Extractors:      []wsauthkit.TokenExtractor{wsauthkit.CookieExtractor("session")},
+	OriginValidator: wsauthkit.AllowedOrigins("https://app.company.com"),
+	Revoker: wsauthkit.RevokerFunc(func(ctx context.Context, claims *wsauthkit.Claims) (bool, error) {
+		return sessionStore.IsRevoked(ctx, claims.ID)
+	}),
+})
+```
+
+`Revoker` is checked once at handshake time. For connections that stay open longer than a revocation should take effect, re-check periodically with `Auth.Reverify`:
+
+```go
+connCtx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+go auth.Reverify(connCtx, claims, 30*time.Second, func(err error) {
+	cancel()
+	conn.Close()
+})
+```
+
+## Multi-Issuer, Multi-Audience, and JWKS Tuning
+
+Multi-tenant deployments with more than one IdP can validate against several issuers/audiences at once, and JWKS fetch/refresh behavior is configurable:
+
+```go
+auth, err := wsauthkit.NewAuth(wsauthkit.Config{
+	Issuers:             []string{"https://tenant-a.example.com", "https://tenant-b.example.com"},
+	Audiences:           []string{"dashboard", "mobile"},
+	JWKSURL:             "https://auth.company.com/certs",
+	JWKSRequestTimeout:  5 * time.Second,
+	JWKSRefreshInterval: 10 * time.Minute,
+	OnAuthResult: func(r *http.Request, claims *wsauthkit.Claims, err error) {
+		authAttemptsTotal.WithLabelValues(outcomeLabel(err)).Inc()
+	},
+})
+```
+
+## Framework Adapters
+
+Gin, Echo, and Fiber adapters live as separate Go modules under [`adapters/`](./adapters) so consumers who only need `net/http` don't pull in framework dependencies:
+
+```go
+import ginwsauth "github.com/elton-peixoto-lu/wsauthkit/adapters/gin"
+
+router.GET("/ws", ginwsauth.Middleware(auth), wsHandler)
+```
+
+## Testing Helpers
+
+[`wsauthkittest`](./wsauthkittest) exports a `ClaimsBuilder`, `FakeValidator`, and `FakeRevoker` so consumers can test their own handlers without hand-rolling test doubles:
+
+```go
+claims := wsauthkittest.NewClaims("user-123").Roles("admin").Build()
 ```
 
 ## Compatibility
@@ -404,7 +475,14 @@ wsauthkit/
 |-- errors.go
 |-- extractor.go
 |-- middleware.go
+|-- origin.go
+|-- revocation.go
 |-- validator.go
+|-- adapters/
+|   |-- gin/
+|   |-- echo/
+|   `-- fiber/
+|-- wsauthkittest/
 |-- examples/
 |-- assets/
 `-- scripts/

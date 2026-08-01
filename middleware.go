@@ -11,14 +11,9 @@ type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
 // Middleware authenticates the request before invoking the wrapped handler.
 func (a *Auth) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorHandler := DefaultErrorHandler
-		if a != nil && a.errorHandler != nil {
-			errorHandler = a.errorHandler
-		}
-
 		claims, err := a.Authenticate(r)
 		if err != nil {
-			errorHandler(w, r, err)
+			a.HandleError(w, r, err)
 			return
 		}
 
